@@ -5,8 +5,9 @@
  */
 Container &Container::operator=(const Container &c) {
     if (this != &c) {
-        destroyListStartingBy(first);
-        first = cloneListStartingBy(c.first);
+        if (first) delete first;
+        first = c.first;
+        if (first) first->references++;
     }
     return *this;
 }
@@ -106,17 +107,17 @@ std::ostream &operator<<(std::ostream &os, const Container &c) {
 /**
  * Metodi di utilità di Container
  */
-Container::Node *Container::cloneListStartingBy(Container::Node *p) {
-    if (!p) return nullptr;
-    return new Node(p->value, cloneListStartingBy(p->next));
-}
-
-void Container::destroyListStartingBy(Container::Node *p) {
-    if (p) {
-        destroyListStartingBy(p->next);
-        delete p;
-    }
-}
+//Container::Node *Container::cloneListStartingBy(Container::Node *p) {
+//    if (!p) return nullptr;
+//    return new Node(p->value, cloneListStartingBy(p->next));
+//}
+//
+//void Container::destroyListStartingBy(Container::Node *p) {
+//    if (p) {
+//        destroyListStartingBy(p->next);
+//        delete p;
+//    }
+//}
 
 /**
  * Metodi di accesso di Container

@@ -41,10 +41,10 @@ private:
 
     Node *first;
 
-    // Metodi di utilità per la manipolazione profonda di liste
-    static Node *cloneListStartingBy(Node *);
-
-    static void destroyListStartingBy(Node *);
+//    // Metodi di utilità per la manipolazione profonda di liste
+//    static Node *cloneListStartingBy(Node *);
+//
+//    static void destroyListStartingBy(Node *);
 
 public:
     class Iterator {
