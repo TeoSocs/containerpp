@@ -1,11 +1,11 @@
 #include <iostream>
-#include "Container.h"
+#include "ContainerTemplate.h"
+
 using namespace std;
 
-int main()
-{
+int main() {
     cout << "Creo un Container" << endl;
-    Container c1 = Container();
+    Container<int> c1 = Container<int>();
     c1.pushFront(1);
     c1.pushFront(2);
     c1.pushFront(3);
@@ -13,7 +13,7 @@ int main()
     c1.pushFront(5);
 
     cout << "Testo assegnazione profonda" << endl;
-    Container c2 = c1;
+    Container<int> c2 = c1;
     c2.remove(2);
 
     cout << "Testo la modifica di un elemento" << endl;
