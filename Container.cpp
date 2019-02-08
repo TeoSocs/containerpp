@@ -1,27 +1,5 @@
 #include "Container.h"
 
-/**
- * Gestione della memoria di Container
- */
-Container &Container::operator=(const Container &c) {
-    if (this != &c) {
-        if (first) delete first;
-        first = c.first;
-        if (first) first->references++;
-    }
-    return *this;
-}
-
-Container::Container(const Container &c) : first(c.first) {
-    if (first) {
-        first->references++;
-    }
-}
-
-Container::~Container() {
-    if (first) delete first;
-}
-
 
 /**
  * Metodi pubblici di Container
@@ -31,49 +9,23 @@ bool Container::isEmpty() const {
 }
 
 void Container::pushFront(const T &x) {
-    if (first) {
-        first->references--;
-    }
     first = new Node(x, first);
-    first->references++;
 }
 
-// TODO: facile che sia da modificare più avanti
 void Container::remove(const T &t) {
-    Node *p = first, *prev = nullptr, *q = nullptr;
+    DeepPtr p = first, prev, q;
+    DeepPtr original = first;
     first = nullptr;
-    while (p && !(p->value == t)) {
-        if (q) delete q;
+    while (p != nullptr && !(p->value == t)) {
         q = new Node(p->value, p->next);
-        q->references++;
-        if (prev == nullptr) {
-            first = q;
-            first->references++;
-        } else {
-            if (prev->next) delete prev->next;
-            prev->next = q;
-            prev->next->references++;
-        }
-        if (prev) delete prev;
+        if (prev == nullptr) first = q;
+        else prev->next = q;
         prev = q;
-        prev->references++;
-        if (p) delete p;
-        p = q->next;
-        if (p) p->references++;
+        p = p->next;
     }
-    if (p) {
-        if (prev == nullptr) {
-            first = p->next;
-            if (first) first->references++;
-        } else {
-            if (prev->next) delete prev->next;
-            prev->next = p->next;
-            if (prev->next) prev->next->references++;
-        }
-    }
-    if (p) delete p;
-    if (prev) delete prev;
-    if (q) delete q;
+    if (p == nullptr) first = original;
+    else if (prev == nullptr) first = p->next;
+    else prev->next = p->next;
 }
 
 T Container::popFirst() {
@@ -81,21 +33,18 @@ T Container::popFirst() {
         throw;
     }
     T aux = first->value;
-    Node *p = first;
-    if (p) p->references++;
-    if (first) delete first;
-    first = p->next;
-    if (first) first->references++;
+    first = first->next;
+    return aux;
 }
 
 std::ostream &operator<<(std::ostream &os, const Container &c) {
     os << "[";
-    Container::Node *p = c.first;
+    Container::DeepPtr p = c.first;
     int i = 1;
-    while (p) {
+    while (p != nullptr) {
         os << p->value;
         p = p->next;
-        if (p) {
+        if (p != nullptr) {
             os << ", ";
         }
     }
@@ -103,21 +52,6 @@ std::ostream &operator<<(std::ostream &os, const Container &c) {
     return os;
 }
 
-
-/**
- * Metodi di utilità di Container
- */
-//Container::Node *Container::cloneListStartingBy(Container::Node *p) {
-//    if (!p) return nullptr;
-//    return new Node(p->value, cloneListStartingBy(p->next));
-//}
-//
-//void Container::destroyListStartingBy(Container::Node *p) {
-//    if (p) {
-//        destroyListStartingBy(p->next);
-//        delete p;
-//    }
-//}
 
 /**
  * Metodi di accesso di Container
@@ -149,7 +83,7 @@ bool Container::Iterator::operator!=(Container::Iterator it) const {
 
 const Container::Iterator Container::Iterator::operator++(int) {
     Iterator aux = *this;
-    if (pointer) {
+    if (pointer != nullptr) {
         pointer = pointer->next;
     }
     return aux;
@@ -159,22 +93,54 @@ const Container::Iterator Container::Iterator::operator++(int) {
 /**
  * Metodi di Node
  */
-Container::Node::Node() : next(nullptr), references(0) {}
+Container::Node::Node() : references(0) {}
 
-Container::Node::Node(const T &x, Container::Node *n) : value(x), next(n), references(0) {
-    if (next) {
-        next->references++;
+Container::Node::Node(const T &x, const DeepPtr &p) : value(x), next(p), references(0) {}
+
+
+/**
+ * Metodi di DeepPtr
+ */
+Container::DeepPtr::DeepPtr(Container::Node *p) : pointer(p) {
+    if (pointer) pointer->references++;
+}
+
+Container::DeepPtr::DeepPtr(const Container::DeepPtr &p) : pointer(p.pointer) {
+    if (pointer) pointer->references++;
+}
+
+Container::DeepPtr::~DeepPtr() {
+    if (pointer) {
+        pointer->references--;
+        if (pointer->references == 0) delete pointer;
     }
 }
 
-// Necessario per implementazione condivisione di memoria controllata
-void Container::Node::operator delete(void *pVoid) {
-    if (pVoid) {
-        Node *q = static_cast<Node *>(pVoid);
-        q->references--;
-        if (q->references == 0) {
-            delete q->next;
-            ::delete q;
+Container::DeepPtr &Container::DeepPtr::operator=(const Container::DeepPtr &p) {
+    if (this != &p) {
+        Node *t = pointer;
+        pointer = p.pointer;
+        if (pointer) pointer->references++;
+        if (t) {
+            t->references--;
+            if (t->references == 0) delete t;
         }
     }
+    return *this;
+}
+
+Container::Node &Container::DeepPtr::operator*() const {
+    return *pointer;
+}
+
+Container::Node *Container::DeepPtr::operator->() const {
+    return pointer;
+}
+
+bool Container::DeepPtr::operator==(const Container::DeepPtr &p) const {
+    return pointer == p.pointer;
+}
+
+bool Container::DeepPtr::operator!=(const Container::DeepPtr &p) const {
+    return pointer != p.pointer;
 }

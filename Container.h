@@ -26,32 +26,48 @@ class Container {
     friend std::ostream &operator<<(std::ostream &, const Container &);
 
 private:
+    class Node;
+
+    class DeepPtr {
+    public:
+        Node *pointer;
+
+        DeepPtr(Node *p = nullptr);
+
+        DeepPtr(const DeepPtr &);
+
+        ~DeepPtr();
+
+        DeepPtr &operator=(const DeepPtr &);
+
+        Node &operator*() const;
+
+        Node *operator->() const;
+
+        bool operator==(const DeepPtr &) const;
+
+        bool operator!=(const DeepPtr &) const;
+    };
+
     class Node {
     public:
         Node();
 
-        Node(const T &, Node *);
-
-        void operator delete(void *);
+        Node(const T &, const DeepPtr &);
 
         T value;
-        Node *next;
+        DeepPtr next;
         int references;
     };
 
-    Node *first;
-
-//    // Metodi di utilità per la manipolazione profonda di liste
-//    static Node *cloneListStartingBy(Node *);
-//
-//    static void destroyListStartingBy(Node *);
+    DeepPtr first;
 
 public:
     class Iterator {
         friend class Container;
 
     private:
-        Node *pointer;
+        DeepPtr pointer;
     public:
         bool operator==(Iterator) const;
 
@@ -61,13 +77,6 @@ public:
     };
 
     Container() : first(nullptr) {}
-
-    // Gestione della memoria "profonda"
-    Container &operator=(const Container &);
-
-    Container(const Container &);
-
-    ~Container();
 
     // Metodi di accesso
     Iterator begin() const;
