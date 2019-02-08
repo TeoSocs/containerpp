@@ -15,6 +15,11 @@ int main()
     c2.remove(2);
 
     cout << "Testo metodi di accesso" << endl;
-    auto it = c1.begin();
-    cout << c1[it];
+    for (auto it = c1.begin(); it != c1.end(); it++) {
+        cout << c1[it];
+    }
+    cout << endl;
+    for (auto it = c2.begin(); it != c2.end(); it++) {
+        cout << c2[it];
+    }
 }

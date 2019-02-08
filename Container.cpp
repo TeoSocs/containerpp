@@ -11,10 +11,14 @@ Container &Container::operator=(const Container &c) {
     return *this;
 }
 
-Container::Container(const Container &c) : first(cloneListStartingBy(c.first)) {}
+Container::Container(const Container &c) : first(c.first) {
+    if (first) {
+        first->references++;
+    }
+}
 
 Container::~Container() {
-    destroyListStartingBy(first);
+    if (first) delete first;
 }
 
 
@@ -25,39 +29,62 @@ bool Container::isEmpty() const {
     return first == nullptr;
 }
 
-void Container::pushFront(int x) {
+void Container::pushFront(const T &x) {
+    if (first) {
+        first->references--;
+    }
     first = new Node(x, first);
+    first->references++;
 }
 
 // TODO: facile che sia da modificare più avanti
-void Container::remove(int x) {
-    Node *p = first, *prev = nullptr;
-    // Scorro fino a che non trovo il value che voglio. Da modificare per classi più complesse
-    while (p && p->value != x) {
-        prev = p;
-        p = p->next;
-    }
-    // a questo punto o ho trovato il nodo da rimuovere o sono uscito
-    if (p) {
-        if (!prev) {
-            // se sono al primo nodo devo far partire il container dal secondo perché sto per cancellare
-            first = p->next;
+void Container::remove(const T &t) {
+    Node *p = first, *prev = nullptr, *q = nullptr;
+    first = nullptr;
+    while (p && !(p->value == t)) {
+        if (q) delete q;
+        q = new Node(p->value, p->next);
+        q->references++;
+        if (prev == nullptr) {
+            first = q;
+            first->references++;
         } else {
-            prev->next = p->next;
+            if (prev->next) delete prev->next;
+            prev->next = q;
+            prev->next->references++;
         }
-        delete p;
+        if (prev) delete prev;
+        prev = q;
+        prev->references++;
+        if (p) delete p;
+        p = q->next;
+        if (p) p->references++;
     }
+    if (p) {
+        if (prev == nullptr) {
+            first = p->next;
+            if (first) first->references++;
+        } else {
+            if (prev->next) delete prev->next;
+            prev->next = p->next;
+            if (prev->next) prev->next->references++;
+        }
+    }
+    if (p) delete p;
+    if (prev) delete prev;
+    if (q) delete q;
 }
 
-int Container::popFirst() {
+T Container::popFirst() {
     if (this->isEmpty()) {
         throw;
     }
+    T aux = first->value;
     Node *p = first;
-    first = first->next;
-    int aux = p->value; // viene invocato il costruttore di copia
-    delete p;
-    return aux;
+    if (p) p->references++;
+    if (first) delete first;
+    first = p->next;
+    if (first) first->references++;
 }
 
 std::ostream &operator<<(std::ostream &os, const Container &c) {
@@ -106,14 +133,47 @@ Container::Iterator Container::end() const {
     return aux;
 }
 
-int &Container::operator[](Container::Iterator it) const {
+T &Container::operator[](Container::Iterator it) const {
     return it.pointer->value;
+}
+
+// ...Non proprio metodi di accesso ma stessa area semantica
+bool Container::Iterator::operator==(Container::Iterator it) const {
+    return pointer == it.pointer;
+}
+
+bool Container::Iterator::operator!=(Container::Iterator it) const {
+    return pointer != it.pointer;
+}
+
+const Container::Iterator Container::Iterator::operator++(int) {
+    Iterator aux = *this;
+    if (pointer) {
+        pointer = pointer->next;
+    }
+    return aux;
 }
 
 
 /**
  * Metodi di Node
  */
-Container::Node::Node() : next(nullptr) {}
+Container::Node::Node() : next(nullptr), references(0) {}
 
-Container::Node::Node(const int &x, Container::Node *n) : value(x), next(n) {}
+Container::Node::Node(const T &x, Container::Node *n) : value(x), next(n), references(0) {
+    if (next) {
+        next->references++;
+    }
+}
+
+// Necessario per implementazione condivisione di memoria controllata
+void Container::Node::operator delete(void *pVoid) {
+    if (pVoid) {
+        Node *q = static_cast<Node *>(pVoid);
+        q->references--;
+        if (q->references == 0) {
+            delete q->next;
+            ::delete q;
+        }
+    }
+}

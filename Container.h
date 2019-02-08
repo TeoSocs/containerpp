@@ -3,6 +3,23 @@
 
 #include <iostream>
 
+class T {
+    friend std::ostream &operator<<(std::ostream &os, const T &t) {
+        os << t.i;
+        return os;
+    };
+
+private:
+    int i;
+
+public:
+    T() {};
+
+    T(int x) : i(x) {};
+
+    bool operator==(const T &t) const { return i == t.i; };
+};
+
 class Container {
     friend class Iterator;
 
@@ -13,10 +30,13 @@ private:
     public:
         Node();
 
-        Node(const int &, Node *);
+        Node(const T &, Node *);
 
-        int value;
+        void operator delete(void *);
+
+        T value;
         Node *next;
+        int references;
     };
 
     Node *first;
@@ -32,6 +52,12 @@ public:
 
     private:
         Node *pointer;
+    public:
+        bool operator==(Iterator) const;
+
+        bool operator!=(Iterator) const;
+
+        const Container::Iterator operator++(int);
     };
 
     Container() : first(nullptr) {}
@@ -48,15 +74,15 @@ public:
 
     Iterator end() const;
 
-    int &operator[](Iterator) const;
+    T &operator[](Iterator) const;
 
     bool isEmpty() const;
 
-    void pushFront(int);
+    void pushFront(const T &);
 
-    void remove(int);
+    void remove(const T &);
 
-    int popFirst();
+    T popFirst();
 };
 
 #endif // BOLLETTA_H
